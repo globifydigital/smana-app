@@ -1,0 +1,12 @@
+
+# Ignore zip files
+*.zip
+
+node_modules/
+.DS_Store
+dist/
+build/
+.env
+.idea/
+.vscode/
+*.log
