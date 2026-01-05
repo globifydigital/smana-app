@@ -16,5 +16,10 @@ const foodOrderSchema = new Schema({
         default: 'Pending',
     },
     notes: { type: String },
+    paymentMethod: {
+        type: String,
+        enum: ['Cash', 'Online'],
+        default: 'Cash',
+    },
 }, { timestamps: true });
 export const FoodOrder = mongoose.model('FoodOrder', foodOrderSchema);

@@ -15,7 +15,7 @@ import '../../features/offers/screens/offers_screen.dart';
 import '../../features/feedback/screens/feedback_screen.dart';
 import '../../features/service_request/screens/service_request_screen.dart';
 import '../../features/dining/screens/cart_screen.dart';
-import '../../features/dining/screens/order_history_screen.dart';
+import '../../features/dining/screens/orders_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -68,7 +68,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/cart', builder: (context, state) => const CartScreen()),
       GoRoute(
         path: '/orders',
-        builder: (context, state) => const OrderHistoryScreen(),
+        builder: (context, state) {
+          final tab = state.uri.queryParameters['tab'];
+          final initialTab = tab == 'previous' ? 1 : 0;
+          return OrdersScreen(initialTab: initialTab);
+        },
       ),
     ],
   );

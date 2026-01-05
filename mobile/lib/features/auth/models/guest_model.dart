@@ -12,6 +12,7 @@ class GuestModel {
   final bool isCheckedIn;
   final String? roomNumber;
   final DateTime? checkInDate;
+  final DateTime? checkOutDate;
 
   GuestModel({
     this.id,
@@ -21,6 +22,7 @@ class GuestModel {
     required this.isCheckedIn,
     this.roomNumber,
     this.checkInDate,
+    this.checkOutDate,
   });
 
   factory GuestModel.fromJson(Map<String, dynamic> json) =>
@@ -35,6 +37,7 @@ class GuestModel {
     bool? isCheckedIn,
     String? roomNumber,
     DateTime? checkInDate,
+    DateTime? checkOutDate,
   }) {
     return GuestModel(
       id: id ?? this.id,
@@ -44,6 +47,7 @@ class GuestModel {
       isCheckedIn: isCheckedIn ?? this.isCheckedIn,
       roomNumber: roomNumber ?? this.roomNumber,
       checkInDate: checkInDate ?? this.checkInDate,
+      checkOutDate: checkOutDate ?? this.checkOutDate,
     );
   }
 }

@@ -99,10 +99,10 @@ export const checkInGuest = asyncHandler(async (req: Request, res: Response) => 
 
         socketService.emit('guest-checked-in', guest);
         res.status(201).json(guest);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Check-in Error Detailed:', error);
         res.status(500);
-        throw new Error(error.message);
+        throw new Error(error?.message || 'Check-in failed');
     }
 });
 

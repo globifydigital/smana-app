@@ -57,7 +57,6 @@ export const placeOrder = asyncHandler(async (req: Request, res: Response) => {
         roomNumber,
         items: orderItems,
         totalAmount,
-        totalAmount,
         notes,
         paymentMethod
     });

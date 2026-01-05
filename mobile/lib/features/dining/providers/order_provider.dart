@@ -7,10 +7,36 @@ import '../../auth/providers/auth_provider.dart';
 
 class OrderState {
   final List<FoodOrder> orders;
+  final List<FoodOrder> currentOrders;
+  final List<FoodOrder> previousOrders;
   final bool isLoading;
   final String? error;
 
-  OrderState({this.orders = const [], this.isLoading = false, this.error});
+  OrderState({
+    this.orders = const [],
+    List<FoodOrder>? currentOrders,
+    List<FoodOrder>? previousOrders,
+    this.isLoading = false,
+    this.error,
+  }) : currentOrders = currentOrders ?? _filterCurrentOrders(orders),
+       previousOrders = previousOrders ?? _filterPreviousOrders(orders);
+
+  static List<FoodOrder> _filterCurrentOrders(List<FoodOrder> orders) {
+    return orders.where((order) {
+      final status = order.status.toLowerCase();
+      return status == 'pending' ||
+          status == 'preparing' ||
+          status == 'ready' ||
+          status == 'confirmed';
+    }).toList();
+  }
+
+  static List<FoodOrder> _filterPreviousOrders(List<FoodOrder> orders) {
+    return orders.where((order) {
+      final status = order.status.toLowerCase();
+      return status == 'completed' || status == 'cancelled';
+    }).toList();
+  }
 
   OrderState copyWith({
     List<FoodOrder>? orders,

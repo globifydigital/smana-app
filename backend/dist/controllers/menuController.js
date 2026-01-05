@@ -19,19 +19,19 @@ export const getMenuAdmin = asyncHandler(async (req, res) => {
 // @route   POST /api/menu
 // @access  Private/Admin
 export const createMenuItem = asyncHandler(async (req, res) => {
-    // Body parsing might need manual handling if multipart/form-data
-    // For now assuming body has correct types or parsing happens before
-    // If using multer, req.body will be populated, but fields might be strings.
-    // Manual cast if coming from form-data usually needs care, but Zod can validate
-    const { name, price, category, description, allergens } = req.body;
-    const imageUrl = req.file ? req.file.path : '';
+    const { name, price, category, description, allergens, imageUrl } = req.body;
+    const finalImageUrl = req.file ? req.file.path : (imageUrl || '');
+    if (isNaN(Number(price))) {
+        res.status(400);
+        throw new Error('Price must be a valid number');
+    }
     const menuItem = await MenuItem.create({
         name,
         price: Number(price),
         category,
         description,
         allergens: allergens ? (typeof allergens === 'string' ? JSON.parse(allergens) : allergens) : [],
-        imageUrl
+        imageUrl: finalImageUrl
     });
     if (menuItem) {
         socketService.emit('menu-updated', menuItem);
@@ -49,7 +49,14 @@ export const updateMenuItem = asyncHandler(async (req, res) => {
     const menuItem = await MenuItem.findById(req.params.id);
     if (menuItem) {
         menuItem.name = req.body.name || menuItem.name;
-        menuItem.price = req.body.price ? Number(req.body.price) : menuItem.price;
+        if (req.body.price !== undefined) {
+            const price = Number(req.body.price);
+            if (isNaN(price)) {
+                res.status(400);
+                throw new Error('Price must be a valid number');
+            }
+            menuItem.price = price;
+        }
         menuItem.category = req.body.category || menuItem.category;
         menuItem.description = req.body.description || menuItem.description;
         menuItem.isActive = req.body.isActive !== undefined ? req.body.isActive : menuItem.isActive;
@@ -58,6 +65,9 @@ export const updateMenuItem = asyncHandler(async (req, res) => {
         }
         if (req.file) {
             menuItem.imageUrl = req.file.path;
+        }
+        else if (req.body.imageUrl) {
+            menuItem.imageUrl = req.body.imageUrl;
         }
         const updatedMenuItem = await menuItem.save();
         socketService.emit('menu-updated', updatedMenuItem);

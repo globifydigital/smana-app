@@ -42,7 +42,6 @@ class AppTheme {
         primary: goldPrimary,
         secondary: goldAccent,
         surface: darkBackground,
-        background: darkBackground,
         onPrimary: Colors.black, // Text on Gold
         onSurface: textPrimary,
       ),

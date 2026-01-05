@@ -49,15 +49,38 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 
   void _setupSocketListeners() {
+    // Prevent duplicate listeners
+    _socketService.off('guest-checked-in');
+    _socketService.off('guest-checked-out');
+
     _socketService.on('guest-checked-in', (data) {
-      if (state.guest != null && data['_id'] == state.guest!.id) {
-        state = state.copyWith(guest: GuestModel.fromJson(data));
+      print('Socket Event: guest-checked-in received for ${data['_id']}');
+      if (state.guest != null) {
+        final String currentGuestId = state.guest!.id ?? '';
+        final String eventGuestId = data['_id']?.toString() ?? '';
+
+        if (currentGuestId == eventGuestId) {
+          print('Updating state for check-in');
+          final updatedGuest = GuestModel.fromJson(data);
+          state = state.copyWith(
+            guest: updatedGuest,
+            // Ensure token is preserved if it's missing in update, usually it is preserved by copyWith(guest:...)
+            // but we are replacing the whole guest object. GuestModel might not have the token field itself (token is separate in AuthState).
+          );
+        }
       }
     });
 
     _socketService.on('guest-checked-out', (data) {
-      if (state.guest != null && data['_id'] == state.guest!.id) {
-        state = state.copyWith(guest: GuestModel.fromJson(data));
+      print('Socket Event: guest-checked-out received for ${data['_id']}');
+      if (state.guest != null) {
+        final String currentGuestId = state.guest!.id ?? '';
+        final String eventGuestId = data['_id']?.toString() ?? '';
+
+        if (currentGuestId == eventGuestId) {
+          print('Updating state for check-out');
+          state = state.copyWith(guest: GuestModel.fromJson(data));
+        }
       }
     });
   }

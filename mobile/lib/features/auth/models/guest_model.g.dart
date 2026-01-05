@@ -16,6 +16,9 @@ GuestModel _$GuestModelFromJson(Map<String, dynamic> json) => GuestModel(
   checkInDate: json['checkInDate'] == null
       ? null
       : DateTime.parse(json['checkInDate'] as String),
+  checkOutDate: json['checkOutDate'] == null
+      ? null
+      : DateTime.parse(json['checkOutDate'] as String),
 );
 
 Map<String, dynamic> _$GuestModelToJson(GuestModel instance) =>
@@ -27,4 +30,5 @@ Map<String, dynamic> _$GuestModelToJson(GuestModel instance) =>
       'isCheckedIn': instance.isCheckedIn,
       'roomNumber': instance.roomNumber,
       'checkInDate': instance.checkInDate?.toIso8601String(),
+      'checkOutDate': instance.checkOutDate?.toIso8601String(),
     };

@@ -1,4 +1,5 @@
 import express from 'express';
+import path from 'path';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -15,6 +16,8 @@ import menuRoutes from './routes/menuRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import serviceRoutes from './routes/serviceRoutes.js';
 import guestRoutes from './routes/guestRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js';
+import staffRoutes from './routes/staffRoutes.js';
 dotenv.config();
 connectDB();
 const app = express();
@@ -22,9 +25,11 @@ const httpServer = createServer(app);
 // Initialize Socket.io
 socketService.init(httpServer);
 // Middleware
-app.use(helmet());
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 app.use(cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    origin: [process.env.CLIENT_URL || 'http://localhost:3000', 'http://localhost:3001', 'http://localhost:3005'],
     credentials: true,
 }));
 app.use(express.json());
@@ -33,6 +38,8 @@ app.use(cookieParser());
 if (process.env.NODE_ENV === 'development') {
     app.use(morgan('dev'));
 }
+// Static folder
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/rooms', roomRoutes);
@@ -40,6 +47,8 @@ app.use('/api/menu', menuRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/service-requests', serviceRoutes);
 app.use('/api/guests', guestRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/staff', staffRoutes);
 app.get('/', (req, res) => {
     res.send('API is running...');
 });

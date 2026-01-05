@@ -28,7 +28,7 @@ class MainScaffold extends ConsumerWidget {
       extendBodyBehindAppBar: true, // For transparency
       appBar: AppBar(
         title: Text(
-          'Welcome, ${guest?.name?.split(' ').first ?? 'Guest'}',
+          'Welcome, ${guest?.name.split(' ').first ?? 'Guest'}',
           style: GoogleFonts.lato(color: Colors.white, fontSize: 16),
         ),
         actions: [

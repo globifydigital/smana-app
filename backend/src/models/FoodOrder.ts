@@ -16,7 +16,13 @@ export interface IFoodOrder extends Document {
     totalAmount: number;
     status: OrderStatus;
     notes?: string;
-    paymentMethod: 'Cash' | 'Online';
+    paymentMethod: 'Cash' | 'Online' | 'HyperPay';
+    // HyperPay payment tracking
+    checkoutId?: string;
+    paymentStatus?: 'pending' | 'success' | 'failed';
+    transactionId?: string;
+    paymentResponse?: any;
+    currency?: 'AED' | 'USD';
     createdAt: Date;
     updatedAt: Date;
 }
@@ -45,8 +51,21 @@ const foodOrderSchema = new Schema<IFoodOrder>(
         notes: { type: String },
         paymentMethod: {
             type: String,
-            enum: ['Cash', 'Online'],
+            enum: ['Cash', 'Online', 'HyperPay'],
             default: 'Cash',
+        },
+        // HyperPay payment tracking
+        checkoutId: { type: String },
+        paymentStatus: {
+            type: String,
+            enum: ['pending', 'success', 'failed'],
+        },
+        transactionId: { type: String },
+        paymentResponse: { type: Schema.Types.Mixed },
+        currency: {
+            type: String,
+            enum: ['AED', 'USD'],
+            default: 'AED',
         },
     },
     { timestamps: true }

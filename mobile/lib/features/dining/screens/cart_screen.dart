@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../providers/cart_provider.dart';
+import 'billing_info_dialog.dart';
 
 class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
@@ -179,32 +180,36 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // Payment Method
-                      const Text(
-                        'Payment Method',
-                        style: TextStyle(color: Colors.white54, fontSize: 16),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildPaymentOption(
-                              ref,
-                              'Cash',
-                              Icons.money,
-                              cartState.paymentMethod == 'Cash',
-                            ),
+                      // Payment Info
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppTheme.goldPrimary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppTheme.goldPrimary.withOpacity(0.3),
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildPaymentOption(
-                              ref,
-                              'Online',
-                              Icons.credit_card,
-                              cartState.paymentMethod == 'Online',
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(
+                              Icons.payment,
+                              color: AppTheme.goldPrimary,
+                              size: 24,
                             ),
-                          ),
-                        ],
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Secure Payment via HyperPay',
+                                style: TextStyle(
+                                  color: AppTheme.goldPrimary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 16),
                       // Total
@@ -233,11 +238,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                       ElevatedButton(
                         onPressed: cartState.isLoading
                             ? null
-                            : () {
-                                ref
-                                    .read(cartProvider.notifier)
-                                    .placeOrder(_notesController.text);
-                              },
+                            : () => _handleHyperPayCheckout(ref),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.goldPrimary,
                           foregroundColor: Colors.black,
@@ -256,7 +257,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                                 ),
                               )
                             : const Text(
-                                'Place Order',
+                                'Pay with HyperPay',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -271,43 +272,106 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     );
   }
 
-  Widget _buildPaymentOption(
-    WidgetRef ref,
-    String method,
-    IconData icon,
-    bool isSelected,
-  ) {
-    return GestureDetector(
-      onTap: () {
-        ref.read(cartProvider.notifier).setPaymentMethod(method);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppTheme.goldPrimary.withOpacity(0.2)
-              : Colors.white10,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? AppTheme.goldPrimary : Colors.transparent,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? AppTheme.goldPrimary : Colors.white70,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              method,
-              style: TextStyle(
-                color: isSelected ? AppTheme.goldPrimary : Colors.white70,
-                fontWeight: FontWeight.bold,
+  Future<void> _handleHyperPayCheckout(WidgetRef ref) async {
+    final cartState = ref.read(cartProvider);
+
+    if (!mounted) return;
+
+    // Show billing dialog - payment happens first, then order is created
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => BillingInfoDialog(
+        cartItems: cartState.items,
+        totalAmount: cartState.totalAmount,
+        notes: _notesController.text,
+        onPaymentSuccess: () {
+          // Clear cart
+          ref.read(cartProvider.notifier).clearCart();
+
+          // Close the cart screen first
+          Navigator.of(context).pop();
+
+          // Show confirmation dialog
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (dialogContext) => AlertDialog(
+              backgroundColor: const Color(0xFF2a2a2a),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
+              title: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green, size: 32),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Payment Successful!',
+                    style: TextStyle(color: Colors.white, fontSize: 20),
+                  ),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Your order has been placed successfully.',
+                    style: TextStyle(color: Colors.white70, fontSize: 16),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.green.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.restaurant, color: Colors.green, size: 24),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Our kitchen has received your order and will start preparing it shortly.',
+                            style: TextStyle(color: Colors.white, fontSize: 14),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop(); // Close dialog
+                    context.go(
+                      '/orders?tab=previous',
+                    ); // Navigate to Previous Orders tab
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.goldPrimary,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                  child: const Text('View My Orders'),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
+        onPaymentFailed: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Payment failed. Please try again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        },
       ),
     );
   }

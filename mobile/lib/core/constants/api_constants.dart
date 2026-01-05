@@ -1,6 +1,5 @@
-import 'package:flutter/material.dart';
-
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 
 class ApiConstants {
   // Use localhost for iOS simulator, or specific IP for physical device
@@ -9,6 +8,9 @@ class ApiConstants {
 
   // For standard emulator use 10.0.2.2, for iOS simulator use 127.0.0.1
   static String get baseUrl {
+    if (kIsWeb) {
+      return 'http://127.0.0.1:5000/api';
+    }
     if (Platform.isAndroid) {
       return 'http://10.0.2.2:5000/api';
     }
@@ -16,6 +18,9 @@ class ApiConstants {
   }
 
   static String get socketUrl {
+    if (kIsWeb) {
+      return 'http://127.0.0.1:5000';
+    }
     if (Platform.isAndroid) {
       return 'http://10.0.2.2:5000';
     }
@@ -28,4 +33,6 @@ class ApiConstants {
   static const String menu = '/menu';
   static const String orders = '/orders';
   static const String myOrders = '/orders/my';
+  static const String paymentCheckout = '/payments/checkout';
+  static const String paymentStatus = '/payments/status';
 }

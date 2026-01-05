@@ -56,8 +56,9 @@ export const updateServiceRequestStatus = asyncHandler(async (req, res) => {
             request.handledBy = req.user._id; // Assign staff
         }
         const updatedRequest = await request.save();
-        socketService.emit('request-status-updated', updatedRequest);
-        res.json(updatedRequest);
+        const populatedRequest = await updatedRequest.populate('guestId', 'name');
+        socketService.emit('request-status-updated', populatedRequest);
+        res.json(populatedRequest);
     }
     else {
         res.status(404);

@@ -41,4 +41,24 @@ class SecureStorageService {
       await _storage.deleteAll();
     }
   }
+
+  // Generic read method for any key
+  Future<String?> read(String key) async {
+    if (Platform.isMacOS) {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(key);
+    } else {
+      return await _storage.read(key: key);
+    }
+  }
+
+  // Generic write method for any key
+  Future<void> write(String key, String value) async {
+    if (Platform.isMacOS) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(key, value);
+    } else {
+      await _storage.write(key: key, value: value);
+    }
+  }
 }

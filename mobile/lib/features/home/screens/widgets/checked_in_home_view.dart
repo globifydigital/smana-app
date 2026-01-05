@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../../auth/providers/auth_provider.dart';
 
 class CheckedInHomeView extends ConsumerWidget {
@@ -12,14 +11,12 @@ class CheckedInHomeView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final guest = ref.watch(authProvider).guest;
     final checkIn = guest?.checkInDate;
-    final checkOut = checkIn?.add(
-      const Duration(days: 1),
-    ); // Mock checkout for now if missing
+    final checkOut = guest?.checkOutDate;
 
-    final formatDate = (DateTime? date) {
-      if (date == null) return 'Oct - 26 - 2025';
-      return DateFormat('MMM - dd - yyyy').format(date);
-    };
+    String formatDate(DateTime? date) {
+      if (date == null) return '--';
+      return DateFormat('MMM - dd - yyyy').format(date.toLocal());
+    }
 
     return Scaffold(
       backgroundColor: Colors.transparent,

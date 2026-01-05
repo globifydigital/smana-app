@@ -158,9 +158,9 @@ class ServiceRequestNotifier extends Notifier<ServiceRequestState> {
 
       // Map frontend priority to backend enum (Low, Medium, High)
       String backendPriority = 'Medium';
-      if (priority == 'Urgent')
+      if (priority == 'Urgent') {
         backendPriority = 'High';
-      else if (priority == 'High')
+      } else if (priority == 'High')
         backendPriority = 'High';
       else if (priority == 'Normal')
         backendPriority = 'Medium';

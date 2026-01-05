@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/widgets/main_scaffold.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../providers/dining_provider.dart';
 import '../providers/cart_provider.dart';
@@ -119,7 +118,7 @@ class DiningScreen extends ConsumerWidget {
                 else
                   ...filteredItems
                       .map((item) => _buildDishCard(ref, item, context))
-                      .toList(), // Pass ref and context
+                      , // Pass ref and context
               ],
             ),
       floatingActionButton: ref.watch(cartProvider).totalItems > 0

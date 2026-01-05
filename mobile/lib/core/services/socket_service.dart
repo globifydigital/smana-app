@@ -9,12 +9,17 @@ class SocketService {
   factory SocketService() => _instance;
   SocketService._internal();
 
+  bool _isInitialized = false;
+
   void init() {
+    if (_isInitialized) return;
+
     _socket = IO.io(
       ApiConstants.socketUrl,
       IO.OptionBuilder()
           .setTransports(['websocket'])
-          .disableAutoConnect() // Connect manually
+          .disableAutoConnect()
+          .enableForceNew() // Ensure fresh connection
           .build(),
     );
 
@@ -25,8 +30,9 @@ class SocketService {
     });
 
     _socket.onDisconnect((_) => print('Socket Disconnected'));
-
     _socket.onError((data) => print('Socket Error: $data'));
+
+    _isInitialized = true;
   }
 
   IO.Socket get socket => _socket;

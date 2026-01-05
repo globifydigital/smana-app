@@ -7,6 +7,8 @@ class FoodOrder {
   final double totalAmount;
   final String status;
   final String? notes;
+  final String? paymentStatus;
+  final String? currency;
   final DateTime createdAt;
 
   FoodOrder({
@@ -16,6 +18,8 @@ class FoodOrder {
     required this.totalAmount,
     required this.status,
     this.notes,
+    this.paymentStatus,
+    this.currency,
     required this.createdAt,
   });
 
@@ -29,6 +33,8 @@ class FoodOrder {
       totalAmount: (json['totalAmount'] as num).toDouble(),
       status: json['status'],
       notes: json['notes'],
+      paymentStatus: json['paymentStatus'],
+      currency: json['currency'],
       createdAt: DateTime.parse(json['createdAt']),
     );
   }

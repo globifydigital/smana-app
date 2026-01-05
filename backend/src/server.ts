@@ -18,6 +18,8 @@ import orderRoutes from './routes/orderRoutes.js';
 import serviceRoutes from './routes/serviceRoutes.js';
 import guestRoutes from './routes/guestRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
+import staffRoutes from './routes/staffRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
 
 dotenv.config();
 
@@ -55,6 +57,8 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/service-requests', serviceRoutes);
 app.use('/api/guests', guestRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/staff', staffRoutes);
+app.use('/api/payments', paymentRoutes);
 
 app.get('/', (req, res) => {
     res.send('API is running...');

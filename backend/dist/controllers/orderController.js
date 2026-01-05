@@ -17,7 +17,7 @@ export const placeOrder = asyncHandler(async (req, res) => {
     // For now assuming req.user is populated by middleware
     // If guest is not logged in but just supplying roomNumber, we might need logic to find active guest for room.
     // Assuming authenticated flow:
-    const { roomNumber, items: rawItems, notes } = result.data;
+    const { roomNumber, items: rawItems, notes, paymentMethod } = result.data;
     const guestId = req.user ? req.user._id : null; // Should handle this better if public
     if (!guestId) {
         res.status(401);
@@ -46,7 +46,8 @@ export const placeOrder = asyncHandler(async (req, res) => {
         roomNumber,
         items: orderItems,
         totalAmount,
-        notes
+        notes,
+        paymentMethod
     });
     if (order) {
         // Populate guest details for the socket event if needed
