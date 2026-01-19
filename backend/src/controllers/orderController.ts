@@ -22,8 +22,26 @@ export const placeOrder = asyncHandler(async (req: Request, res: Response) => {
     // If guest is not logged in but just supplying roomNumber, we might need logic to find active guest for room.
     // Assuming authenticated flow:
 
-    const { roomNumber, items: rawItems, notes, paymentMethod } = result.data;
-    const guestId = req.user ? (req.user as any)._id : null; // Should handle this better if public
+    const { items: rawItems, notes, paymentMethod } = result.data;
+    // Security Fix: Trust server-side roomNumber for Guests, not the one sent by client
+    // If it's a staff member (who might not have a roomNumber on their profile), we might allow them to specify it?
+    // For now, assuming this endpoint is primarily for Guests or we prioritize the user's assigned room.
+
+    // Check if user is a guest with an assigned room
+    const user = req.user as any;
+    let roomNumber = result.data.roomNumber; // Default to body for Staff/Admin if they use this
+
+    // If user is a Guest (has no role or role is Guest - depending on your schema, but Guest model has roomNumber)
+    // Safest check: if the user object has a roomNumber, use it.
+    if (user && user.roomNumber) {
+        roomNumber = user.roomNumber;
+    } else if (user && user.role === 'Guest') {
+        // If they are a guest but have no roomNumber, they shouldn't be ordering?
+        res.status(400);
+        throw new Error('Guest is not currently checked into a room.');
+    }
+
+    const guestId = user ? user._id : null;
 
     if (!guestId) {
         res.status(401);

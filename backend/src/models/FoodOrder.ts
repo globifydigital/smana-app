@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-export type OrderStatus = 'Pending' | 'preparing' | 'Ready' | 'Delivered' | 'Cancelled';
+export type OrderStatus = 'Pending' | 'Preparing' | 'Ready' | 'Delivered' | 'Cancelled';
 
 export interface IOrderItem {
     menuItemId: mongoose.Types.ObjectId;
@@ -22,6 +22,7 @@ export interface IFoodOrder extends Document {
     paymentStatus?: 'pending' | 'success' | 'failed';
     transactionId?: string;
     paymentResponse?: any;
+    paymentCompletedAt?: Date;
     currency?: 'AED' | 'USD';
     createdAt: Date;
     updatedAt: Date;
@@ -45,7 +46,7 @@ const foodOrderSchema = new Schema<IFoodOrder>(
         totalAmount: { type: Number, required: true },
         status: {
             type: String,
-            enum: ['Pending', 'preparing', 'Ready', 'Delivered', 'Cancelled'],
+            enum: ['Pending', 'Preparing', 'Ready', 'Delivered', 'Cancelled'],
             default: 'Pending',
         },
         notes: { type: String },
@@ -59,14 +60,16 @@ const foodOrderSchema = new Schema<IFoodOrder>(
         paymentStatus: {
             type: String,
             enum: ['pending', 'success', 'failed'],
+            default: 'pending', // Added default
         },
-        transactionId: { type: String },
+        transactionId: { type: String, default: null }, // Added default
         paymentResponse: { type: Schema.Types.Mixed },
         currency: {
             type: String,
             enum: ['AED', 'USD'],
             default: 'AED',
         },
+        paymentCompletedAt: { type: Date, default: null }, // Added this field
     },
     { timestamps: true }
 );

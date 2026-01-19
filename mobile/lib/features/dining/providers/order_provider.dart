@@ -34,7 +34,10 @@ class OrderState {
   static List<FoodOrder> _filterPreviousOrders(List<FoodOrder> orders) {
     return orders.where((order) {
       final status = order.status.toLowerCase();
-      return status == 'completed' || status == 'cancelled';
+      return status == 'completed' ||
+          status == 'cancelled' ||
+          status == 'delivered' ||
+          status == 'failed';
     }).toList();
   }
 

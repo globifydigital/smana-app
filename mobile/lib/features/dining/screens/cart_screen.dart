@@ -4,6 +4,10 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../providers/cart_provider.dart';
 import 'billing_info_dialog.dart';
+import '../../../../core/services/payment_service.dart';
+import '../models/payment_models.dart';
+import 'hyperpay_webview.dart';
+import '../../auth/providers/auth_provider.dart';
 
 class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
@@ -14,34 +18,12 @@ class CartScreen extends ConsumerStatefulWidget {
 
 class _CartScreenState extends ConsumerState<CartScreen> {
   final TextEditingController _notesController = TextEditingController();
+  final _paymentService = PaymentService();
+  bool _isPaymentProcessing = false;
 
   @override
   Widget build(BuildContext context) {
     final cartState = ref.watch(cartProvider);
-
-    // Listen for success
-    ref.listen(cartProvider, (previous, next) {
-      if (next.isOrderSuccess && !next.isLoading) {
-        // Show success and pop
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Order placed successfully!')),
-        );
-        context.pop(); // Go back to Dining
-        ref
-            .read(cartProvider.notifier)
-            .clearCart(); // Clear after success logic if needed, or before
-        // Actually provider implementation clears it by setting new state?
-        // My implementation: state = CartState(isOrderSuccess: true); which clears items. Correct.
-      }
-      if (next.error != null && !next.isLoading) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${next.error}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    });
 
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
@@ -236,7 +218,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                       const SizedBox(height: 16),
                       // Button
                       ElevatedButton(
-                        onPressed: cartState.isLoading
+                        onPressed: cartState.isLoading || _isPaymentProcessing
                             ? null
                             : () => _handleHyperPayCheckout(ref),
                         style: ElevatedButton.styleFrom(
@@ -247,7 +229,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: cartState.isLoading
+                        child: cartState.isLoading || _isPaymentProcessing
                             ? const SizedBox(
                                 height: 20,
                                 width: 20,
@@ -274,105 +256,241 @@ class _CartScreenState extends ConsumerState<CartScreen> {
 
   Future<void> _handleHyperPayCheckout(WidgetRef ref) async {
     final cartState = ref.read(cartProvider);
+    final authState = ref.read(authProvider);
 
     if (!mounted) return;
 
-    // Show billing dialog - payment happens first, then order is created
-    showDialog(
+    // 1. Show Billing Dialog and await result
+    final result = await showDialog<Map<String, dynamic>>(
       context: context,
       barrierDismissible: false,
       builder: (context) => BillingInfoDialog(
         cartItems: cartState.items,
         totalAmount: cartState.totalAmount,
         notes: _notesController.text,
-        onPaymentSuccess: () {
-          // Clear cart
-          ref.read(cartProvider.notifier).clearCart();
-
-          // Close the cart screen first
-          Navigator.of(context).pop();
-
-          // Show confirmation dialog
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (dialogContext) => AlertDialog(
-              backgroundColor: const Color(0xFF2a2a2a),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              title: Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.green, size: 32),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Payment Successful!',
-                    style: TextStyle(color: Colors.white, fontSize: 20),
-                  ),
-                ],
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Your order has been placed successfully.',
-                    style: TextStyle(color: Colors.white70, fontSize: 16),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.green.withOpacity(0.3)),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.restaurant, color: Colors.green, size: 24),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Our kitchen has received your order and will start preparing it shortly.',
-                            style: TextStyle(color: Colors.white, fontSize: 14),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(dialogContext).pop(); // Close dialog
-                    context.go(
-                      '/orders?tab=previous',
-                    ); // Navigate to Previous Orders tab
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.goldPrimary,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                  ),
-                  child: const Text('View My Orders'),
-                ),
-              ],
-            ),
-          );
-        },
-        onPaymentFailed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Payment failed. Please try again.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        },
       ),
+    );
+
+    if (result == null) return; // User cancelled
+
+    setState(() {
+      _isPaymentProcessing = true;
+    });
+
+    try {
+      final billingAddress = result['billingAddress'] as BillingAddress;
+      final email = result['email'] as String;
+      // Dynamic room number from auth provider
+      final roomNumber = authState.guest?.roomNumber ?? '000';
+
+      // 2. Create Checkout
+      final checkoutResult = await _paymentService.createCheckoutWithItems(
+        items: cartState.items.map((item) {
+          return {'menuItemId': item.menuItem.id, 'quantity': item.quantity};
+        }).toList(),
+        roomNumber: roomNumber,
+        notes: _notesController.text,
+        currency: 'AED',
+        customerEmail: email,
+        billingAddress: billingAddress,
+      );
+
+      final checkoutId = checkoutResult['checkoutId'] as String;
+      final integrity = checkoutResult['integrity'] as String?;
+
+      if (!mounted) return;
+
+      // 3. Navigate to Payment WebView
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => HyperPayWebView(
+            checkoutId: checkoutId,
+            integrity: integrity ?? '',
+            shopperResultUrl: 'https://smana.app/payment/result',
+            mode: 'test',
+            onPaymentSuccess: (resourcePath) async {
+              // Verify payment status
+              try {
+                final status = await _paymentService.getPaymentStatus(
+                  checkoutId,
+                );
+                if (status.success || status.pending) {
+                  if (mounted) {
+                    Navigator.of(context).pop(); // Close WebView
+                    _showSuccessDialog();
+                  }
+                } else {
+                  if (mounted) {
+                    Navigator.of(context).pop(); // Close WebView
+                    _showFailureDialog(
+                      'Payment failed: ${status.result.description}',
+                    );
+                  }
+                }
+              } catch (e) {
+                if (mounted) {
+                  Navigator.of(context).pop();
+                  _showFailureDialog('Verification failed: $e');
+                }
+              }
+            },
+            onPaymentError: (error) {
+              if (mounted) {
+                Navigator.of(context).pop(); // Close WebView
+                _showFailureDialog(error);
+              }
+            },
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        _showFailureDialog('Failed to initiate payment: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPaymentProcessing = false;
+        });
+      }
+    }
+  }
+
+  void _showSuccessDialog() {
+    // Clear cart
+    ref.read(cartProvider.notifier).clearCart();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF2a2a2a),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green, size: 32),
+            const SizedBox(width: 12),
+            Text(
+              'Payment Successful!',
+              style: TextStyle(color: Colors.white, fontSize: 20),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Your order has been placed successfully.',
+              style: TextStyle(color: Colors.white70, fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.restaurant, color: Colors.green, size: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Our kitchen has received your order and will start preparing it shortly.',
+                      style: TextStyle(color: Colors.white, fontSize: 14),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop(); // Close dialog
+              context.go('/orders'); // Navigate to Current Orders
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.goldPrimary,
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: const Text('View Current Orders'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFailureDialog(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF2a2a2a),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.error_outline, color: Colors.red, size: 32),
+            const SizedBox(width: 12),
+            Text(
+              'Payment Failed',
+              style: TextStyle(color: Colors.white, fontSize: 20),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              message,
+              style: TextStyle(color: Colors.white70, fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'You can view this attempt in your order history.',
+              style: TextStyle(color: Colors.white54, fontSize: 14),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop(); // Stay on cart
+            },
+            child: const Text(
+              'Try Again',
+              style: TextStyle(color: Colors.white70),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              // Clear cart if desired, or keep it.
+              // Logic: Failed payment usually creates a "Failed" order in backend?
+              // The CartProvider `placeOrder` logic isn't used here directly yet for failed ones unless backend creates it.
+              // Assuming backend creates a pending/failed order via webhook or initial create.
+              // For now, we just navigate.
+              Navigator.of(dialogContext).pop();
+              context.go('/orders?tab=previous'); // Navigate to Previous Orders
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('View Previous Orders'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 }

@@ -18,6 +18,7 @@ import serviceRoutes from './routes/serviceRoutes.js';
 import guestRoutes from './routes/guestRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import staffRoutes from './routes/staffRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
 dotenv.config();
 connectDB();
 const app = express();
@@ -49,6 +50,7 @@ app.use('/api/service-requests', serviceRoutes);
 app.use('/api/guests', guestRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/staff', staffRoutes);
+app.use('/api/payments', paymentRoutes);
 app.get('/', (req, res) => {
     res.send('API is running...');
 });
@@ -56,6 +58,18 @@ app.get('/', (req, res) => {
 app.use(notFound);
 app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, async () => {
     console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+    // Start order cleanup service for auto-cancelling abandoned payments
+    const { startOrderCleanupService } = await import('./services/orderCleanupService.js');
+    startOrderCleanupService();
+});
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+    console.log('SIGTERM signal received: closing HTTP server');
+    const { stopOrderCleanupService } = await import('./services/orderCleanupService.js');
+    stopOrderCleanupService();
+    httpServer.close(() => {
+        console.log('HTTP server closed');
+    });
 });

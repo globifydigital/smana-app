@@ -52,6 +52,7 @@ CheckoutResponse _$CheckoutResponseFromJson(Map<String, dynamic> json) =>
     CheckoutResponse(
       success: json['success'] as bool,
       checkoutId: json['checkoutId'] as String,
+      integrity: json['integrity'] as String?,
       result: ResultInfo.fromJson(json['result'] as Map<String, dynamic>),
     );
 
@@ -59,6 +60,7 @@ Map<String, dynamic> _$CheckoutResponseToJson(CheckoutResponse instance) =>
     <String, dynamic>{
       'success': instance.success,
       'checkoutId': instance.checkoutId,
+      'integrity': instance.integrity,
       'result': instance.result,
     };
 

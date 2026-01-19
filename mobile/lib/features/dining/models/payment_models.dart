@@ -57,11 +57,13 @@ class CheckoutRequest {
 class CheckoutResponse {
   final bool success;
   final String checkoutId;
+  final String? integrity; // PCI DSS v4.0
   final ResultInfo result;
 
   CheckoutResponse({
     required this.success,
     required this.checkoutId,
+    this.integrity,
     required this.result,
   });
 

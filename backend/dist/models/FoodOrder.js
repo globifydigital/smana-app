@@ -12,14 +12,29 @@ const foodOrderSchema = new Schema({
     totalAmount: { type: Number, required: true },
     status: {
         type: String,
-        enum: ['Pending', 'preparing', 'Ready', 'Delivered', 'Cancelled'],
+        enum: ['Pending', 'Preparing', 'Ready', 'Delivered', 'Cancelled'],
         default: 'Pending',
     },
     notes: { type: String },
     paymentMethod: {
         type: String,
-        enum: ['Cash', 'Online'],
+        enum: ['Cash', 'Online', 'HyperPay'],
         default: 'Cash',
     },
+    // HyperPay payment tracking
+    checkoutId: { type: String },
+    paymentStatus: {
+        type: String,
+        enum: ['pending', 'success', 'failed'],
+        default: 'pending', // Added default
+    },
+    transactionId: { type: String, default: null }, // Added default
+    paymentResponse: { type: Schema.Types.Mixed },
+    currency: {
+        type: String,
+        enum: ['AED', 'USD'],
+        default: 'AED',
+    },
+    paymentCompletedAt: { type: Date, default: null }, // Added this field
 }, { timestamps: true });
 export const FoodOrder = mongoose.model('FoodOrder', foodOrderSchema);

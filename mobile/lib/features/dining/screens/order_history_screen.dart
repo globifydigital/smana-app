@@ -98,6 +98,7 @@ class OrderHistoryScreen extends ConsumerWidget {
         statusColor = Colors.green;
         break;
       case 'cancelled':
+      case 'failed':
         statusColor = Colors.red;
         break;
       default:

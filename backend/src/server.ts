@@ -70,6 +70,20 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, async () => {
     console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+
+    // Start order cleanup service for auto-cancelling abandoned payments
+    const { startOrderCleanupService } = await import('./services/orderCleanupService.js');
+    startOrderCleanupService();
+});
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+    console.log('SIGTERM signal received: closing HTTP server');
+    const { stopOrderCleanupService } = await import('./services/orderCleanupService.js');
+    stopOrderCleanupService();
+    httpServer.close(() => {
+        console.log('HTTP server closed');
+    });
 });
