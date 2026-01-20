@@ -52,4 +52,5 @@ class ApiConstants {
   static const String myOrders = '/orders/my';
   static const String paymentCheckout = '/payments/checkout';
   static const String paymentStatus = '/payments/status';
+  static const String feedback = '/feedbacks';
 }

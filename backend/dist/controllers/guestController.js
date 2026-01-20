@@ -141,6 +141,8 @@ export const loginGuest = asyncHandler(async (req, res) => {
             email: guest.email,
             roomNumber: guest.roomNumber,
             isCheckedIn: guest.isCheckedIn,
+            checkInDate: guest.checkInDate,
+            checkOutDate: guest.checkOutDate,
             token
             // Return other fields as needed
         });

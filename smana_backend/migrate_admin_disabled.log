@@ -1,9 +1,0 @@
-SystemCheckError: System check identified some issues:
-
-ERRORS:
-auth.Group.id: (mongodb.E001) MongoDB does not support AutoField.
-	HINT: Use django_mongodb_backend.fields.ObjectIdAutoField instead.
-auth.Permission.id: (mongodb.E001) MongoDB does not support AutoField.
-	HINT: Use django_mongodb_backend.fields.ObjectIdAutoField instead.
-contenttypes.ContentType.id: (mongodb.E001) MongoDB does not support AutoField.
-	HINT: Use django_mongodb_backend.fields.ObjectIdAutoField instead.

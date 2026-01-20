@@ -95,8 +95,21 @@ class OrderNotifier extends Notifier<OrderState> {
       print('OrderNotifier: calling API ${ApiConstants.myOrders}');
       final response = await _apiService.get(ApiConstants.myOrders);
       print('OrderNotifier: API response ${response.statusCode}');
-      final List<dynamic> data = response.data;
-      final orders = data.map((json) => FoodOrder.fromJson(json)).toList();
+      final dynamic responseData = response.data;
+      List<FoodOrder> orders;
+
+      if (responseData is Map<String, dynamic> &&
+          responseData.containsKey('orders')) {
+        // Handle paginated response
+        final List<dynamic> list = responseData['orders'];
+        orders = list.map((json) => FoodOrder.fromJson(json)).toList();
+      } else if (responseData is List) {
+        // Handle legacy array response
+        orders = responseData.map((json) => FoodOrder.fromJson(json)).toList();
+      } else {
+        orders = [];
+      }
+
       print('OrderNotifier: parsed ${orders.length} orders');
       state = OrderState(orders: orders, isLoading: false);
     } catch (e, stack) {

@@ -8,8 +8,22 @@ import { socketService } from '../services/socketService.js';
 // @route   GET /api/rooms
 // @access  Private
 export const getRooms = asyncHandler(async (req: Request, res: Response) => {
-    const rooms = await Room.find({}).sort({ roomNumber: 1 });
-    res.json(rooms);
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 50; // Higher limit for rooms as they are often displayed in a grid
+    const skip = (page - 1) * limit;
+
+    const count = await Room.countDocuments({});
+    const rooms = await Room.find({})
+        .sort({ roomNumber: 1 })
+        .limit(limit)
+        .skip(skip);
+
+    res.json({
+        rooms,
+        page,
+        pages: Math.ceil(count / limit),
+        total: count
+    });
 });
 
 // @desc    Get room by ID

@@ -43,6 +43,10 @@ class MainScaffold extends ConsumerWidget {
             ),
           ),
           IconButton(
+            icon: const Icon(Icons.feedback_outlined, color: Colors.white70),
+            onPressed: () => context.push('/feedback'),
+          ),
+          IconButton(
             icon: const Icon(Icons.notifications, color: Colors.white70),
             onPressed: () {},
           ),

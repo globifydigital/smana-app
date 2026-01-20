@@ -17,8 +17,22 @@ export const placeOrder = asyncHandler(async (req, res) => {
     // For now assuming req.user is populated by middleware
     // If guest is not logged in but just supplying roomNumber, we might need logic to find active guest for room.
     // Assuming authenticated flow:
-    const { roomNumber, items: rawItems, notes, paymentMethod } = result.data;
-    const guestId = req.user ? req.user._id : null; // Should handle this better if public
+    const { items: rawItems, notes, paymentMethod } = result.data;
+    // Security Fix: Trust server-side roomNumber for Guests, not the one sent by client
+    // If it's a staff member (who might not have a roomNumber on their profile), we might allow them to specify it?
+    // For now, assuming this endpoint is primarily for Guests or we prioritize the user's assigned room.
+    // Check if user is a guest with an assigned room
+    const user = req.user;
+    let roomNumber = result.data.roomNumber; // Default to body for Staff/Admin if they use this
+    // Security Enforcement: ALWAYS override roomNumber from authenticated Guest profile
+    if (user && user.role === 'Guest') {
+        if (!user.roomNumber) {
+            res.status(403);
+            throw new Error('Guest is not currently checked into a room.');
+        }
+        roomNumber = user.roomNumber;
+    }
+    const guestId = user ? user._id : null;
     if (!guestId) {
         res.status(401);
         throw new Error('User not authenticated');
@@ -64,10 +78,21 @@ export const placeOrder = asyncHandler(async (req, res) => {
 // @route   GET /api/orders
 // @access  Private/Staff
 export const getOrders = asyncHandler(async (req, res) => {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+    const count = await FoodOrder.countDocuments({});
     const orders = await FoodOrder.find({})
         .populate('guestId', 'name')
-        .sort({ createdAt: -1 });
-    res.json(orders);
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .skip(skip);
+    res.json({
+        orders,
+        page,
+        pages: Math.ceil(count / limit),
+        total: count
+    });
 });
 // @desc    Get orders for a guest
 // @route   GET /api/orders/my

@@ -31,14 +31,13 @@ export const placeOrder = asyncHandler(async (req: Request, res: Response) => {
     const user = req.user as any;
     let roomNumber = result.data.roomNumber; // Default to body for Staff/Admin if they use this
 
-    // If user is a Guest (has no role or role is Guest - depending on your schema, but Guest model has roomNumber)
-    // Safest check: if the user object has a roomNumber, use it.
-    if (user && user.roomNumber) {
+    // Security Enforcement: ALWAYS override roomNumber from authenticated Guest profile
+    if (user && user.role === 'Guest') {
+        if (!user.roomNumber) {
+            res.status(403);
+            throw new Error('Guest is not currently checked into a room.');
+        }
         roomNumber = user.roomNumber;
-    } else if (user && user.role === 'Guest') {
-        // If they are a guest but have no roomNumber, they shouldn't be ordering?
-        res.status(400);
-        throw new Error('Guest is not currently checked into a room.');
     }
 
     const guestId = user ? user._id : null;
@@ -94,10 +93,23 @@ export const placeOrder = asyncHandler(async (req: Request, res: Response) => {
 // @route   GET /api/orders
 // @access  Private/Staff
 export const getOrders = asyncHandler(async (req: Request, res: Response) => {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    const count = await FoodOrder.countDocuments({});
     const orders = await FoodOrder.find({})
         .populate('guestId', 'name')
-        .sort({ createdAt: -1 });
-    res.json(orders);
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .skip(skip);
+
+    res.json({
+        orders,
+        page,
+        pages: Math.ceil(count / limit),
+        total: count
+    });
 });
 
 // @desc    Get orders for a guest
