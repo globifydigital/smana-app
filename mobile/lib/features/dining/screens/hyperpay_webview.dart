@@ -16,7 +16,7 @@ class HyperPayWebView extends StatefulWidget {
     required this.shopperResultUrl,
     required this.onPaymentSuccess,
     required this.onPaymentError,
-    this.mode = 'test',
+    this.mode = 'live',
   });
 
   @override

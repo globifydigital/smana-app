@@ -59,7 +59,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                                 (item.menuItem.imageUrl != null &&
                                         item.menuItem.imageUrl!.isNotEmpty)
                                     ? item.menuItem.imageUrl!
-                                    : 'https://via.placeholder.com/60',
+                                    : 'https://iconscout.com/illustrations/no-data',
                                 width: 60,
                                 height: 60,
                                 fit: BoxFit.cover,
@@ -307,7 +307,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             checkoutId: checkoutId,
             integrity: integrity ?? '',
             shopperResultUrl: 'https://smana.app/payment/result',
-            mode: 'test',
+            mode: 'live',
             onPaymentSuccess: (resourcePath) async {
               // Verify payment status
               try {
